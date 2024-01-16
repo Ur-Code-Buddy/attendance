@@ -1,0 +1,155 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Attendance Record
+{% endblock %}
+
+{% block main %}
+
+<div class="container-fluid mt-5">
+    <div class="row">
+        <div class="col-lg-12">
+            <h3>Attendance Table</h3>
+            <div class="card">
+                <div class="card-header text-center">
+                    Weekly Attendance - {{ month }}
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-1 d-flex align-items-center justify-content-center">
+                            <!-- Previous Button -->
+                            <button class="btn btn-primary" type="button" onclick="handlePrevious()">
+                                Previous
+                            </button>
+                        </div>
+                        <div class="col-md-10">
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <!-- Month and Date Row -->
+                                            <th></th> <!-- Empty cell for the 'Name' column -->
+                                            {% for date in dates %}
+                                            <th class="text-center">{{ date }}</th>
+                                            {% endfor %}
+                                        </tr>
+                                        <tr>
+                                            <!-- Days of the Week Row -->
+                                            <th>Name</th>
+                                            <th class="text-center">Mon</th>
+                                            <th class="text-center">Tue</th>
+                                            <th class="text-center">Wed</th>
+                                            <th class="text-center">Thu</th>
+                                            <th class="text-center">Fri</th>
+                                            <th class="text-center">Sat</th>
+                                            <th class="text-center">Sun</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for name in names %}
+                                        <tr>
+                                            <td>{{ name.name }}</td>
+                                            {% for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] %}
+                                                <td>
+                                                    {% if attendance_data[name.name][loop.index0] %}
+                                                    <input type="checkbox" name="{{ name.name }}_{{ day }}" onclick="toggleDate(this, '{{ day }}', '{{ name.name }}', '{{ dates[loop.index0] }}', '{{ month }}')">
+                                                    {% else %}
+                                                        <input type="checkbox" checked="checked" name="{{ name.name }}_{{ day }}" onclick="toggleDate(this, '{{ day }}', '{{ name.name }}', '{{ dates[loop.index0] }}', '{{ month }}')">
+                                                    {% endif %}
+                                                </td>
+                                            {% endfor %}
+                                        </tr>
+                                    {% endfor %}
+
+
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="col-md-1 d-flex align-items-center justify-content-center">
+                            <!-- Next Button -->
+                            <button class="btn btn-primary" type="button" onclick="handleNext()">
+                                Next
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+
+
+<script>
+    function handlePrevious() {
+    console.log('Previous Week Requested');
+
+    // Ajax call to server to handle previous week action
+    $.ajax({
+        type: 'GET',
+        url: '/previous_week',
+        success: function(response) {
+            console.log('Server response for previous week:', response);
+            // Refresh the page after getting a successful response
+            window.location.reload(true);
+        },
+        error: function(error) {
+            console.error('Error with previous week:', error);
+        }
+    });
+}
+
+function handleNext() {
+    console.log('Next Week Requested');
+
+    // Ajax call to server to handle next week action
+    $.ajax({
+        type: 'GET',
+        url: '/next_week',
+        success: function(response) {
+            console.log('Server response for next week:', response);
+            // refresh the page after getting a successful response
+            window.location.reload(true);
+        },
+        error: function(error) {
+            console.error('Error with next week:', error);
+        }
+    });
+}
+
+
+    function toggleDate(checkbox, day, name, date, month) {
+    console.log('Toggled:', checkbox.checked, 'for', name, day, 'Date:', date, 'Month:', month);
+
+    var postData = {
+        'name': name,
+        'day': day,
+        'date': date,
+        'month': month,
+        'checked': checkbox.checked
+    };
+
+    // Ajax call to server to handle date toggle
+    $.ajax({
+        type: 'POST',
+        url: '/process_date',
+        contentType: 'application/json;charset=UTF-8',
+        data: JSON.stringify(postData),
+        success: function(response) {
+            console.log('Server response:', response);
+        },
+        error: function(error) {
+            console.error('Error:', error);
+        }
+    });
+}
+
+</script>
+
+
+{% endblock %}

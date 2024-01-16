@@ -1,0 +1,55 @@
+html,
+body {
+    height: 100%;
+}
+
+.form-signin {
+    max-width: 330px;
+    padding: 1rem;
+}
+
+.form-signin .form-floating:focus-within {
+    z-index: 2;
+}
+
+.form-signin input[type="email"] {
+    margin-bottom: -1px;
+    border-bottom-right-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.form-signin input[type="password"] {
+    margin-bottom: 10px;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+
+.content-container {
+    height: 250px;
+    /* Set the desired height for the container */
+    overflow: hidden;
+    /* Hide overflow content if the text is too long */
+    margin-bottom: 20px;
+    /* Add some space between columns */
+}
+
+.content-container img {
+    width: 100%;
+    /* Make sure the image fills the container */
+    margin-top: 10px;
+    /* Adjust the space between text and image */
+}
+
+.absent {
+    background-color: red; /* or any other color */
+    color: white;
+  }
+
+.present {
+    <input type="checkbox" checked="false" name="{{ name.name }}_{{ day }}" onclick="toggleDate(this, '{{ day }}', '{{ name.name }}', '{{ dates[loop.index0] }}', '{{ month }}')">
+
+}
+
+.absent {
+    <input type="checkbox" name="{{ name.name }}_{{ day }}" onclick="toggleDate(this, '{{ day }}', '{{ name.name }}', '{{ dates[loop.index0] }}', '{{ month }}')">
+}

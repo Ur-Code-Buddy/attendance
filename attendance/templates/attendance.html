@@ -1,0 +1,57 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Log In
+{% endblock %}
+
+{% block main %}
+
+<div class="container mt-5">
+    <div class="row">
+      {% for month, days in date_dict.items() %}
+      <!-- Month -->
+      <div class="col-lg-4 col-md-6 month-container">
+        <div class="card">
+          <div class="card-header text-center">
+            {{ month }}
+          </div>
+          <div>
+              {% for day, day_data in days.items() %}
+                  <button class="btn btn-light date-button" onclick="toggleDate(this, '{{ month }} {{ day }}')">{{ day }}</button>
+              {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+
+
+
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script>
+function toggleDate(button, date) {
+  // Toggle the class to change the button appearance
+  button.classList.toggle('absent');
+
+  // Send an AJAX POST request to the Flask endpoint
+  $.ajax({
+    type: 'POST',
+    url: '/process_date',
+    data: {
+      selected_date: date
+    },
+    success: function(response) {
+      // Handle the response from the server (if needed)
+      console.log('Server response:', response);
+    },
+    error: function(error) {
+      console.error('Error:', error);
+    }
+  });
+}
+
+</script>
+
+{% endblock %}
