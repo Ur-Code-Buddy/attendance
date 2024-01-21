@@ -1,5 +1,8 @@
 import os
 import secrets
+import random
+import datetime
+
 from cs50 import SQL
 from flask import (
     Flask,
@@ -8,23 +11,43 @@ from flask import (
     jsonify,
     request,
     session,
+    flash
 
 )
 from flask_session import Session
+from flask_mail import Mail, Message
 
 from functools import wraps
 from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import datetime
 from flask_socketio import SocketIO, send
 from helpers import apology, login_required, admin_required
-import datetime
+from dotenv import find_dotenv, load_dotenv
 
-# Configure application
+
+dotenv_path = find_dotenv()
+load_dotenv(dotenv_path)
+
+my_secret_email = os.getenv("my_secret_email")
+my_secret_pass = os.getenv("my_secret_pass")
+
+
 app = Flask(__name__)
 
 current_username = ""
+current_password = ""
+current_email= ""
+current_verification_code = {}
 
-# Configure session to use filesystem (instead of signed cookies)
+app.config['MAIL_SERVER'] = 'smtp.office365.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = my_secret_email
+app.config['MAIL_PASSWORD'] = my_secret_pass
+app.config['MAIL_DEFAULT_SENDER'] = my_secret_email
+
+mail = Mail(app)
+
 app.config["SECRET_KEY"] = secrets.token_hex(32)
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
@@ -112,17 +135,66 @@ def attendance():
 
     return render_template("attendance.html", date_dict=date_dict)
 
-
+# In your Flask route
 @app.route("/members", methods=["GET", "POST"])
 @login_required
 def members():
     if request.method == "POST":
         clicked_name = request.form.get("member_name")
         print(f"Clicked Name: {clicked_name}")
-        return apology("TODO")
 
+        # Get the number of days absent and the specific days with month
+        absent_info = datadb.execute("""
+            SELECT COUNT(*) as days_absent, GROUP_CONCAT(month || ' ' || day) as absent_days
+            FROM attendance
+            WHERE people_id = (SELECT id FROM people WHERE name = ?) AND present = 'False'
+        """, clicked_name)[0]
+
+        # Convert the comma-separated absent_days into a list of dictionaries
+        # Each dictionary contains 'month' and 'day'
+        absent_days = [
+            {'month': day.split(' ')[0], 'day': day.split(' ')[1]}
+            for day in absent_info['absent_days'].split(',')
+        ] if absent_info['absent_days'] else []
+
+        # Render the template with the detailed note
+        return render_template("members_detail.html", name=clicked_name, days_absent=absent_info['days_absent'], absent_days=absent_days)
+
+    # For the initial GET request, retrieve the list of members
     rows = datadb.execute("SELECT * FROM people")
     return render_template("members.html", rows=rows)
+
+
+@app.route("/change_password", methods=["GET", "POST"])
+@login_required
+def change_password():
+    if request.method == "POST":
+        # Ensure old password, new password, and confirmation are submitted
+        old_password = request.form.get("old_password")
+        new_password = request.form.get("new_password")
+        confirmation = request.form.get("confirmation")
+
+        # Query database for user's current hashed password
+        user_id = session["user_id"]
+        current_hashed_password = db.execute("SELECT hash FROM users WHERE id = ?", user_id)[0]["hash"]
+
+        if not check_password_hash(current_hashed_password, old_password):
+            return apology("Invalid old password", 403)
+
+        if new_password != confirmation:
+            return apology("New password and confirmation do not match", 403)
+
+        new_hashed_password = generate_password_hash(new_password)
+        db.execute("UPDATE users SET hash = ? WHERE id = ?", new_hashed_password, user_id)
+        print("password changed for id:",user_id)
+
+        # Redirect user to home page with a success message
+        flash("Password changed successfully!", "success")
+        return redirect("/")
+    
+    return render_template("change_password.html")
+
+
 
 
 @app.route("/live_chat")
@@ -188,13 +260,110 @@ def logout():
     return redirect("/")
 
 
-@app.route("/register", methods=["GET", "POST"])
+
+def send_registration_email(email, code):
+    subject = "Congratulations on Registering with Student Attendance!"
+
+    body = f"""
+        <p>Dear User,</p>
+        <p>Congratulations on successfully registering with our Student Attendance System!</p>
+        <p>We're delighted to have you as part of our community. To ensure the security of your account, please use the following verification code:</p>
+        <p style="font-size: 18px; font-weight: bold; background-color: #f4f4f4; padding: 10px; border-radius: 5px; user-select: all;">{code}</p>
+        <p>Enter this code on our website to complete the registration process.</p>
+        <p>If you have any questions or need assistance, feel free to reach out. We look forward to your active participation!</p>
+        <p>Best regards,<br>Student Attendance Team</p>
+    """
+
+    message = Message(subject, recipients=[email], html=body)
+
+    try:
+        mail.send(message)
+        print("Registration email sent successfully")
+    except Exception as e:
+        print(f"Error sending registration email: {e}")
+
+
+
+
+
+
+
+def send_verification_email(email, code):  #*Works well
+    subject = "Email Verification Code"
+    
+    # HTML-formatted body with a larger and copyable verification code
+    body = f"""
+        <p>Dear User,</p>
+        <p>Thank you for registering to our Attendance System! Your verification code is:</p>
+        <p style="font-size: 18px; font-weight: bold; background-color: #f4f4f4; padding: 10px; border-radius: 5px; user-select: all;">{code}</p>
+        <p>Please enter this code on the website to complete the registration process.</p>
+        <p>Best regards,<br>Student Attendance</p>
+    """
+
+    message = Message(subject, recipients=[email], html=body)
+
+    try:
+        mail.send(message)
+        print("Email sent successfully")
+    except Exception as e:
+        print(f"Error sending email: {e}")
+
+def verification_code():
+    global current_verification_code
+    current_verification_code = str(random.randint(100000, 999999))
+    return 
+
+
+
+@app.route("/verification", methods=["GET", "POST"])
+def verification():  #!this is also not done
+    #
+    send_verification_email(current_email,current_verification_code)
+    
+    if request.method == "POST":
+        code = request.form.get("verification_code")
+        print("code recived is: ",code)
+        print("code:",code, "  verification_code: ",current_verification_code)
+        if str(code).strip() == str(current_verification_code).strip():
+    
+            print("All went good!")
+            hash = generate_password_hash(current_password)
+
+            try:
+                new_user = db.execute(
+                    "INSERT INTO users (username, hash, email) VALUES(?, ?, ?)", current_username, hash, current_email
+                )
+            except:
+                return apology("Username Already Exists")
+            session["user_id"] = new_user
+            send_registration_email(current_email,current_verification_code)
+            return redirect("/")
+        
+        return render_template("register.html")
+    else: 
+        return render_template("verification.html")
+
+
+
+
+
+
+@app.route("/register", methods=["GET", "POST"]) 
 def register():
     """Register user"""
+    global current_username
+    global current_password
+    global current_email
     if request.method == "POST":
         username = request.form.get("username")
         password = request.form.get("password")
         confirmation = request.form.get("confirmation")
+        email = request.form.get("email")
+
+        # Check if the email already exists in the database
+        existing_user = db.execute("SELECT * FROM users WHERE email = ?", email)
+        if existing_user:
+            return apology("Email already exists. Please use a different email.")
 
         # checking if the values are acceptable
         if not username:
@@ -206,22 +375,18 @@ def register():
 
         if password != confirmation:
             return apology("Password and Confirmation DO NOT MATCH")
-
-        # saving it as a hashed pass in db
-        hash = generate_password_hash(password)
-
-        try:
-            new_user = db.execute(
-                "INSERT INTO users (username,hash) VALUES(?,?)", username, hash
-            )
-        except:
-            return apology("Username Already Exists")
+        
         current_username = username
-        session["user_id"] = new_user
-        return redirect("/")
+        current_password = password
+        current_email = email
+        verification_code()
+        return redirect("/verification")
+
+        
 
     else:
         return render_template("register.html")
+
 
 
 @socketio.on("message")
@@ -271,9 +436,6 @@ days_in_month = {
 }
 current_month = months[0]
 month_over = False
-
-
-from flask import render_template
 
 @app.route("/week", methods=["GET", "POST"])
 @login_required
@@ -381,5 +543,4 @@ def process_date():
 
 
 if __name__ == "__main__":
-
-    socketio.run(app, host="0.0.0.0")
+    socketio.run(app, host="0.0.0.0",debug=True)

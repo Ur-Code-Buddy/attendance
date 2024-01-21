@@ -6,3 +6,5 @@ Werkzeug
 cs50
 eventlet
 gunicorn
+python-dotenv
+flask_mail

@@ -1,0 +1,23 @@
+{% extends "layout.html" %} {% block title %} Verification {% endblock %} {%
+block main %}
+<div class="d-flex justify-content-center vh-100">
+  <form action="/verification" method="post" class="text-center">
+    <div class="mb-3">
+      <label for="verification_code" class="form-label">
+        Enter the 6-digit verification code:
+      </label>
+      <input
+        type="text"
+        class="form-control"
+        id="verification_code"
+        name="verification_code"
+        pattern="[0-9]{6}"
+        title="Please enter a 6-digit number"
+        maxlength="6"
+        required
+      />
+    </div>
+    <button class="btn btn-primary" type="submit">Submit</button>
+  </form>
+</div>
+{% endblock %}

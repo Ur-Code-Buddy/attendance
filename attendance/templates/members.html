@@ -1,27 +1,29 @@
-{% extends "layout.html" %}
-
-{% block title %}
-    Members
-{% endblock %}
-
-{% block main %}
-    <div class="container mt-5">
-        <h2 class="text-center mb-4">Member List</h2>
-        <div class="row" style="max-height: 600px; overflow: auto;">
-            {% for row in rows %}
-                <div class="col-md-4 mb-3">
-                    <div class="card">
-                        <div class="card-body text-center">
-                            <form action="/members" method="POST">
-                                <button type="submit" name="member_name" value="{{ row.name }}" class="btn btn-outline-primary btn-block">{{ row.name }}</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-                {% if loop.index % 3 == 0 %}
-                <div class="w-100"></div>  <!-- This will ensure the wrapping after every third element -->
-                {% endif %}
-            {% endfor %}
+{% extends "layout.html" %} {% block title %} Members {% endblock %} {% block
+main %}
+<div class="container mt-5">
+  <h2 class="text-center mb-4">Member List</h2>
+  <div class="row" style="max-height: 600px; overflow: auto">
+    {% for row in rows %}
+    <div class="col-md-4 mb-3">
+      <div class="card">
+        <div class="card-body text-center">
+          <form action="/members" method="POST">
+            <button
+              type="submit"
+              name="member_name"
+              value="{{ row.name }}"
+              class="btn btn-outline-primary btn-block"
+            >
+              {{ row.name }}
+            </button>
+          </form>
         </div>
+      </div>
     </div>
+    {% if loop.index % 3 == 0 %}
+    <div class="w-100"></div>
+    <!-- This will ensure the wrapping after every third element -->
+    {% endif %} {% endfor %}
+  </div>
+</div>
 {% endblock %}

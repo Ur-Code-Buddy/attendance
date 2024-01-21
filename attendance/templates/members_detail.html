@@ -1,0 +1,25 @@
+{% extends "layout.html" %} {% block title %}Member Details{% endblock %} {%
+block main %}
+<h1>{{ name }} Details</h1>
+<p>{{ name }} was absent for {{ days_absent }} days.</p>
+
+<div class="row mt-3">
+  <div class="col-md-6 offset-md-3">
+    <div class="card">
+      <div class="card-header">Total Absent Days</div>
+      <div class="card-body">
+        <h2 class="card-title">{{ days_absent }}</h2>
+        <ul class="list-group">
+          {% for absent_info in absent_days %}
+          <li class="list-group-item">
+            {{ absent_info.month }} {{ absent_info.day }}
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add any additional information you want to display -->
+{% endblock %}
