@@ -2,6 +2,7 @@ import os
 import secrets
 import random
 import datetime
+import re
 
 from cs50 import SQL
 from flask import (
@@ -265,13 +266,13 @@ def send_registration_email(email, code):
     subject = "Congratulations on Registering with Student Attendance!"
 
     body = f"""
-        <p>Dear User,</p>
-        <p>Congratulations on successfully registering with our Student Attendance System!</p>
-        <p>We're delighted to have you as part of our community. To ensure the security of your account, please use the following verification code:</p>
-        <p style="font-size: 18px; font-weight: bold; background-color: #f4f4f4; padding: 10px; border-radius: 5px; user-select: all;">{code}</p>
-        <p>Enter this code on our website to complete the registration process.</p>
-        <p>If you have any questions or need assistance, feel free to reach out. We look forward to your active participation!</p>
+        <<p>Dear User,</p>
+        <p>Thank you for choosing our Student Attendance System!</p>
+        <p>We're delighted that you have registered with us. Your presence in our community is highly valued. Our system is designed to make attendance tracking efficient and user-friendly.</p>
+        <p>If you have any questions or need assistance, please don't hesitate to reach out to us at <a href="mailto:05baivab@gmail.com">05baivab@gmail.com</a>. We're here to support you.</p>
+        <p>Once again, thank you for registering with us. We look forward to providing you with a seamless attendance experience.</p>
         <p>Best regards,<br>Student Attendance Team</p>
+
     """
 
     message = Message(subject, recipients=[email], html=body)
@@ -281,10 +282,7 @@ def send_registration_email(email, code):
         print("Registration email sent successfully")
     except Exception as e:
         print(f"Error sending registration email: {e}")
-
-
-
-
+        return apology(f"Error: {e}")
 
 
 
@@ -307,6 +305,7 @@ def send_verification_email(email, code):  #*Works well
         print("Email sent successfully")
     except Exception as e:
         print(f"Error sending email: {e}")
+        return apology(f"Error: {e}")
 
 def verification_code():
     global current_verification_code
@@ -316,7 +315,7 @@ def verification_code():
 
 
 @app.route("/verification", methods=["GET", "POST"])
-def verification():  #!this is also not done
+def verification(): 
     #
     send_verification_email(current_email,current_verification_code)
     
@@ -344,28 +343,29 @@ def verification():  #!this is also not done
         return render_template("verification.html")
 
 
-
-
-
-
 @app.route("/register", methods=["GET", "POST"]) 
 def register():
     """Register user"""
     global current_username
     global current_password
     global current_email
+
     if request.method == "POST":
         username = request.form.get("username")
         password = request.form.get("password")
         confirmation = request.form.get("confirmation")
         email = request.form.get("email")
 
+        # Check if the email is in a valid format
+        if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+            return apology("Invalid email format. Please provide a valid email address.")
+
         # Check if the email already exists in the database
         existing_user = db.execute("SELECT * FROM users WHERE email = ?", email)
         if existing_user:
             return apology("Email already exists. Please use a different email.")
 
-        # checking if the values are acceptable
+        # Checking if the values are acceptable
         if not username:
             return apology("Username Error")
         if not password:
@@ -382,10 +382,7 @@ def register():
         verification_code()
         return redirect("/verification")
 
-        
-
-    else:
-        return render_template("register.html")
+    return render_template("register.html")
 
 
 
